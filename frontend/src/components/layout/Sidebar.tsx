@@ -1,10 +1,11 @@
+// frontend/src/components/layout/Sidebar.tsx
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import {
   LayoutDashboard, Users, FolderKanban, FileText, Bell,
   GraduationCap, BookOpen, ClipboardList, Lightbulb,
-  UserCheck, BarChart3, Shield, LogOut, User, Settings
+  UserCheck, BarChart3, Shield, LogOut, User,  Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -27,8 +28,9 @@ const navItems: Record<string, { label: string; path: string; icon: React.ReactN
   ],
   FACULTY: [
     { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { label: 'Proposals', path: '/proposals', icon: <FileText className="w-5 h-5" /> },
+    { label: 'Create Projects', path: '/faculty/proposals', icon: <FileText className="w-5 h-5" /> },
     { label: 'My Projects', path: '/my-projects', icon: <BookOpen className="w-5 h-5" /> },
+    { label: 'Project Management', path: '/team-management', icon: <User className="w-5 h-5" /> },
     { label: 'Notifications', path: '/notifications', icon: <Bell className="w-5 h-5" /> },
   ],
   STUDENT: [
@@ -40,49 +42,119 @@ const navItems: Record<string, { label: string; path: string; icon: React.ReactN
   ],
 };
 
+// Role-specific color themes
+const roleTheme: Record<string, {
+  sidebarBg: string; brand: string; brandText: string; brandSub: string;
+  activeLink: string; activeLinkText: string; avatarBg: string; avatarText: string;
+  accent: string; logoutHover: string;
+}> = {
+  ADMIN: {
+    sidebarBg: 'bg-slate-900',
+    brand: 'text-white', brandText: 'ProjectAlloc', brandSub: 'text-slate-400',
+    activeLink: 'bg-blue-600/20', activeLinkText: 'text-blue-400',
+    avatarBg: 'bg-blue-600/20', avatarText: 'text-blue-400',
+    accent: 'text-slate-400 hover:bg-slate-800 hover:text-white',
+    logoutHover: 'hover:bg-red-500/10 text-red-400',
+  },
+  SUBADMIN: {
+    sidebarBg: 'bg-amber-950',
+    brand: 'text-amber-100', brandText: 'ReviewHub', brandSub: 'text-amber-500/60',
+    activeLink: 'bg-amber-500/15', activeLinkText: 'text-amber-400',
+    avatarBg: 'bg-amber-500/15', avatarText: 'text-amber-400',
+    accent: 'text-amber-400/70 hover:bg-amber-900/50 hover:text-amber-200',
+    logoutHover: 'hover:bg-red-500/10 text-red-400',
+  },
+  FACULTY: {
+    // Dark Blue Theme for faculty
+    sidebarBg: 'bg-gradient-to-br from-[#0a0e27] via-[#0f172a] to-[#1a1a3e]',
+    brand: 'text-white', 
+    brandText: 'Faculty Portal', 
+    brandSub: 'text-blue-400/60',
+    activeLink: 'bg-blue-500/15', 
+    activeLinkText: 'text-blue-400',
+    avatarBg: 'bg-blue-500/15', 
+    avatarText: 'text-blue-400',
+    accent: 'text-blue-300/60 hover:bg-blue-900/40 hover:text-blue-300',
+    logoutHover: 'hover:bg-red-500/10 text-red-400',
+  },
+  STUDENT: {
+    sidebarBg: 'bg-teal-950',
+    brand: 'text-teal-100', brandText: 'Student Hub', brandSub: 'text-teal-500/60',
+    activeLink: 'bg-teal-500/15', activeLinkText: 'text-teal-400',
+    avatarBg: 'bg-teal-500/15', avatarText: 'text-teal-400',
+    accent: 'text-teal-400/70 hover:bg-teal-900/50 hover:text-teal-200',
+    logoutHover: 'hover:bg-red-500/10 text-red-400',
+  },
+};
+
 export const Sidebar: React.FC = () => {
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
   const items = navItems[user?.role || 'STUDENT'] || [];
+  const theme = roleTheme[user?.role || 'STUDENT'];
 
   return (
-    <aside className="w-64 bg-white border-r h-screen flex flex-col fixed left-0 top-0 z-30">
-      <div className="p-6 border-b">
-        <h1 className="text-xl font-bold text-blue-600">ProjectAlloc</h1>
-        <p className="text-xs text-gray-500 mt-1">Allocation Platform</p>
+    <aside className={`w-64 ${theme.sidebarBg} h-screen flex flex-col fixed left-0 top-0 z-30 shadow-2xl`}>
+      {/* Brand Section */}
+      <div className="p-6 border-b border-white/5">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="p-1.5 bg-white/5 rounded-xl">
+            <Sparkles className="w-5 h-5 text-blue-400" />
+          </div>
+          <h1 className={`text-xl font-bold ${theme.brand} tracking-tight`}>
+            {theme.brandText}
+          </h1>
+        </div>
+        <p className={`text-xs mt-1 ${theme.brandSub}`}>
+          {user?.role === 'ADMIN' ? 'Administration' : user?.role === 'FACULTY' ? 'Faculty Portal' : 'Allocation Platform'}
+        </p>
       </div>
 
-      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+      {/* Navigation */}
+      <nav className="flex-1 py-6 px-3 space-y-1.5 overflow-y-auto">
         {items.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) => cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-              isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 group',
+              isActive 
+                ? `${theme.activeLink} ${theme.activeLinkText} shadow-md` 
+                : theme.accent
             )}
           >
-            {item.icon}
+            <div className="transition-transform duration-200 group-hover:scale-110">
+              {item.icon}
+            </div>
             {item.label}
+            {item.label === 'Notifications' && (
+              <span className="ml-auto w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            )}
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-4 border-t space-y-2">
-        <button onClick={() => navigate('/profile')}
-          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-xs">
+      {/* Profile & Logout */}
+      <div className="p-4 border-t border-white/5 space-y-2">
+        <button 
+          onClick={() => navigate('/profile')}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-all duration-300 ${theme.accent} group`}
+        >
+          <div className={`w-9 h-9 ${theme.avatarBg} rounded-xl flex items-center justify-center ${theme.avatarText} font-bold text-sm backdrop-blur-sm transition-transform group-hover:scale-105`}>
             {user?.firstName?.[0]}{user?.lastName?.[0]}
           </div>
           <div className="flex-1 text-left min-w-0">
-            <p className="font-medium text-gray-900 truncate text-sm">{user?.firstName} {user?.lastName}</p>
-            <p className="text-xs text-gray-500">{user?.role}</p>
+            <p className="font-semibold text-white/90 truncate text-sm">{user?.firstName} {user?.lastName}</p>
+            <p className="text-xs text-white/50">{user?.role}</p>
           </div>
         </button>
 
-        <button onClick={() => { clearAuth(); window.location.href = '/login'; }}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-          <LogOut className="w-4 h-4" /> Logout
+        <button 
+          onClick={() => { clearAuth(); window.location.href = '/login'; }}
+          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-xl transition-all duration-300 ${theme.logoutHover}`}
+        >
+          <LogOut className="w-4 h-4" /> 
+          Logout
         </button>
       </div>
     </aside>
