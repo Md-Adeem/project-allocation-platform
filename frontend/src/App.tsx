@@ -29,6 +29,7 @@ import ReviewIdeasPage from '@/pages/admin/ReviewIdeasPage';
 import FacultyDashboard from '@/pages/faculty/FacultyDashboard';
 import StudentDashboard from '@/pages/student/StudentDashboard';
 import BrowseProjectsPage from '@/pages/student/BrowseProjectsPage';
+import WhatToDoPage from '@/pages/student/WhatToDoPage';
 import MyTeamPage from '@/pages/student/MyTeamPage';
 import IdeasPage from '@/pages/student/IdeasPage';
 import ReviewPage from '@/pages/subadmin/ReviewPage';
@@ -101,6 +102,7 @@ const App: React.FC = () => (
         <Route path="/projects" element={<ProtectedRoute roles={['STUDENT']}><BrowseProjectsPage /></ProtectedRoute>} />
         <Route path="/my-team" element={<ProtectedRoute roles={['STUDENT']}><MyTeamPage /></ProtectedRoute>} />
         <Route path="/ideas" element={<ProtectedRoute roles={['STUDENT']}><IdeasPage /></ProtectedRoute>} />
+        <Route path="/what-to-do" element={<ProtectedRoute roles={['STUDENT']}><WhatToDoPage /></ProtectedRoute>} />
       </Route>
 
       {/* ═══ 404 ═══ */}
