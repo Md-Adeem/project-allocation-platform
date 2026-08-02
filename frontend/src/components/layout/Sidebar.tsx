@@ -1,14 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import {
   LayoutDashboard, Users, FolderKanban, FileText, Bell,
   GraduationCap, BookOpen, ClipboardList, Lightbulb,
-  UserCheck, BarChart3, Shield, LogOut, User, Settings
+  UserCheck, BarChart3, Shield, LogOut, User, Settings, Menu, X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navItems: Record<string, { label: string; path: string; icon: React.ReactNode }[]> = {
+type NavItem = {
+  label: string;
+  path: string;
+  icon: React.ReactNode;
+  notice?: boolean;
+};
+
+const navItems: Record<string, NavItem[]> = {
   ADMIN: [
     { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { label: 'Users', path: '/users', icon: <Users className="w-5 h-5" /> },
@@ -36,6 +43,12 @@ const navItems: Record<string, { label: string; path: string; icon: React.ReactN
     { label: 'Projects', path: '/projects', icon: <GraduationCap className="w-5 h-5" /> },
     { label: 'My Team', path: '/my-team', icon: <UserCheck className="w-5 h-5" /> },
     { label: 'Ideas', path: '/ideas', icon: <Lightbulb className="w-5 h-5" /> },
+    { 
+      label: '⚠️ What To Do', 
+      path: '/what-to-do', 
+      icon: <Bell className="w-5 h-5" />, 
+      notice: true
+    },
     { label: 'Notifications', path: '/notifications', icon: <Bell className="w-5 h-5" /> },
   ],
 };
@@ -83,52 +96,137 @@ const roleTheme: Record<string, {
 export const Sidebar: React.FC = () => {
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Close mobile menu when screen size changes to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const items = navItems[user?.role || 'STUDENT'] || [];
   const theme = roleTheme[user?.role || 'STUDENT'];
+  const isStudent = user?.role === 'STUDENT';
 
   return (
-    <aside className={`w-64 ${theme.sidebarBg} h-screen flex flex-col fixed left-0 top-0 z-30`}>
-      {/* Brand */}
-      <div className="p-6 border-b border-white/5">
-        <h1 className={`text-xl font-bold ${theme.brand}`}>{theme.brandText}</h1>
-        <p className={`text-xs mt-1 ${theme.brandSub}`}>{user?.role === 'ADMIN' ? 'Administration' : 'Allocation Platform'}</p>
-      </div>
+    <>
+      {/* Mobile Hamburger Button - Only visible on mobile */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg md:hidden"
+      >
+        {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
 
-      {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-        {items.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-              isActive ? `${theme.activeLink} ${theme.activeLinkText}` : theme.accent
-            )}
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed left-0 top-0 h-screen flex flex-col z-40 transition-transform duration-300
+        w-64 ${theme.sidebarBg}
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0
+      `}>
+        {/* Brand */}
+        <div className="p-6 border-b border-white/5">
+          <h1 className={`text-xl font-bold ${theme.brand}`}>{theme.brandText}</h1>
+          <p className={`text-xs mt-1 ${theme.brandSub}`}>{user?.role === 'ADMIN' ? 'Administration' : 'Allocation Platform'}</p>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+          {items.map((item) => {
+            // For student notice button, render with special styling
+            if (isStudent && item.notice) {
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={({ isActive }) => cn(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 relative overflow-hidden group',
+                    'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30 hover:shadow-xl hover:scale-105',
+                    isActive && 'ring-2 ring-white/50 shadow-xl'
+                  )}
+                >
+                  {/* Shine effect */}
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                  
+                  {/* Animated bell icon */}
+                  <Bell className="w-5 h-5 animate-pulse" />
+                  
+                  <span className="flex-1 text-left">{item.label}</span>
+                  
+                  {/* MUST READ badge */}
+                  <span className="text-[9px] font-bold bg-white/30 px-2 py-0.5 rounded-full animate-pulse">
+                    MUST READ
+                  </span>
+                </NavLink>
+              );
+            }
+            
+            // Regular nav items
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={({ isActive }) => cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                  isActive ? `${theme.activeLink} ${theme.activeLinkText}` : theme.accent
+                )}
+              >
+                {item.icon}
+                {item.label}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Profile & Logout */}
+        <div className="p-4 border-t border-white/5 space-y-2">
+          <button 
+            onClick={() => {
+              navigate('/profile');
+              setIsMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-all duration-200 ${theme.accent}`}
           >
-            {item.icon}
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
+            <div className={`w-8 h-8 ${theme.avatarBg} rounded-lg flex items-center justify-center ${theme.avatarText} font-bold text-xs`}>
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <p className="font-medium text-white/90 truncate text-sm">{user?.firstName} {user?.lastName}</p>
+              <p className="text-xs opacity-50">{user?.role}</p>
+            </div>
+          </button>
 
-      {/* Profile & Logout */}
-      <div className="p-4 border-t border-white/5 space-y-2">
-        <button onClick={() => navigate('/profile')}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-all duration-200 ${theme.accent}`}>
-          <div className={`w-8 h-8 ${theme.avatarBg} rounded-lg flex items-center justify-center ${theme.avatarText} font-bold text-xs`}>
-            {user?.firstName?.[0]}{user?.lastName?.[0]}
-          </div>
-          <div className="flex-1 text-left min-w-0">
-            <p className="font-medium text-white/90 truncate text-sm">{user?.firstName} {user?.lastName}</p>
-            <p className="text-xs opacity-50">{user?.role}</p>
-          </div>
-        </button>
+          <button 
+            onClick={() => { 
+              clearAuth(); 
+              window.location.href = '/login'; 
+            }}
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-xl transition-all duration-200 ${theme.logoutHover}`}
+          >
+            <LogOut className="w-4 h-4" /> Logout
+          </button>
+        </div>
+      </aside>
 
-        <button onClick={() => { clearAuth(); window.location.href = '/login'; }}
-          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-xl transition-all duration-200 ${theme.logoutHover}`}>
-          <LogOut className="w-4 h-4" /> Logout
-        </button>
-      </div>
-    </aside>
+      {/* Content spacer for desktop - this pushes your main content to the right */}
+      {/* <div className="hidden md:block w-64" /> */}
+      <div className="hidden md:block w-64" />
+    </>
   );
 };
