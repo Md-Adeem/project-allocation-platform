@@ -9,7 +9,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navItems: Record<string, { label: string; path: string; icon: React.ReactNode }[]> = {
+type NavItem = {
+  label: string;
+  path: string;
+  icon: React.ReactNode;
+  notice?: boolean;
+};
+
+const navItems: Record<string, NavItem[]> = {
   ADMIN: [
     { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { label: 'Users', path: '/users', icon: <Users className="w-5 h-5" /> },
@@ -38,6 +45,12 @@ const navItems: Record<string, { label: string; path: string; icon: React.ReactN
     { label: 'Projects', path: '/projects', icon: <GraduationCap className="w-5 h-5" /> },
     { label: 'My Team', path: '/my-team', icon: <UserCheck className="w-5 h-5" /> },
     { label: 'Ideas', path: '/ideas', icon: <Lightbulb className="w-5 h-5" /> },
+    { 
+      label: '⚠️ What To Do', 
+      path: '/what-to-do', 
+      icon: <Bell className="w-5 h-5" />, 
+      notice: true
+    },
     { label: 'Notifications', path: '/notifications', icon: <Bell className="w-5 h-5" /> },
   ],
 };
@@ -90,8 +103,22 @@ const roleTheme: Record<string, {
 export const Sidebar: React.FC = () => {
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Close mobile menu when screen size changes to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const items = navItems[user?.role || 'STUDENT'] || [];
   const theme = roleTheme[user?.role || 'STUDENT'];
+  const isStudent = user?.role === 'STUDENT';
 
   return (
     <aside className={`w-64 ${theme.sidebarBg} h-screen flex flex-col fixed left-0 top-0 z-30 shadow-2xl`}>
